@@ -1,2 +1,2 @@
-# 10x_cropseq_nextflow
-a nextflow pipeline for 10X sequencing CROPSeq
+# 10x_nextflow
+a nextflow pipeline for 10X sequencing
