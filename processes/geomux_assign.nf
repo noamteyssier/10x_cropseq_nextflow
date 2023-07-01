@@ -15,6 +15,7 @@ process GeomuxAssign {
         -i ${h5ad} \
         -o ${sample_id}.tsv \
         -u ${params.geomux.min_umi} \
+        -c ${params.geomux.min_cells} \
         -j ${params.n_threads}
     """
 }

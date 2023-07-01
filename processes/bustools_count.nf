@@ -5,8 +5,8 @@ process BUStoolsCount {
     input:
     tuple val(sample_id), path(sorted_bus)
     path(transcripts)
-    path(t2g)
     path(ec)
+    path(t2g)
     val(group)
 
     output:
