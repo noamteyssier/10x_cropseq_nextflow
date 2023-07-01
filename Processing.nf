@@ -9,16 +9,21 @@ include { GeomuxAssign } from "./processes/geomux_assign.nf"
 
 workflow {
 
+  pcr_t2g = file(params.kallisto.pcr.t2g, checkIfExists: true)
+  pcr_index = file(params.kallisto.pcr.index, checkIfExists: true)
+  tx_t2g = file(params.kallisto.tx.t2g, checkIfExists: true)
+  tx_index = file(params.kallisto.tx.index, checkIfExists: true)
+
   reads_pcr = Channel
     .fromFilePairs (params.data.reads_pcr, checkIfExists: true)
 
-  reads_10x = Channel
-    .fromFilePairs (params.data.reads_10x, checkIfExists: true)
+  // reads_10x = Channel
+  //   .fromFilePairs (params.data.reads_10x, checkIfExists: true)
 
   // PCR Pipeline
   pcr_bus = KallistoBUS (
     reads_pcr,
-    params.kallisto.pcr.index,
+    pcr_index,
     params.kallisto.pcr.tech,
     "pcr",
   )
@@ -34,8 +39,8 @@ workflow {
   pcr_counts = BUStoolsCount(
     pcr_sort.sorted_bus_ch,
     pcr_bus.transcripts_ch,
-    params.kallisto.pcr.t2g,
     pcr_bus.ec_ch,
+    pcr_t2g,
     "pcr",
   )
   pcr_h5ad = BuildH5AD(
