@@ -30,7 +30,7 @@ process BuildH5AD {
     adata.var.index = genes
 
     # Calculate QC metrics
-    if ${calculate} == "True":
+    if ${calculate}:
         sc.pp.calculate_qc_metrics(adata, inplace=True)
 
     # Add SampleID to obs
