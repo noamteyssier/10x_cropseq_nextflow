@@ -12,8 +12,6 @@ workflow {
 
     // prepare transcriptome files
     tx_t2g = file(params.kallisto.tx.t2g, checkIfExists: true)
-    tx_intron_t2g = file(params.kallisto.tx.intron_t2g, checkIfExists: true)
-    tx_cdna_t2g = file(params.kallisto.tx.cdna_t2g, checkIfExists: true)
     tx_index = file(params.kallisto.tx.index, checkIfExists: true)
     reads_10x = Channel
         .fromFilePairs (params.data.reads_10x, checkIfExists: true)
@@ -29,8 +27,6 @@ workflow {
         tx_t2g,
         tx_index,
         params.kallisto.tx.tech,
-        tx_intron_t2g,
-        tx_cdna_t2g,
         reads_10x,
         pcr_t2g,
         pcr_index,
@@ -44,8 +40,6 @@ workflow ProcessGroups {
         tx_t2g
         tx_index
         tx_tech
-        tx_intron_t2g
-        tx_cdna_t2g
         reads_10x
         pcr_t2g
         pcr_index
@@ -55,9 +49,7 @@ workflow ProcessGroups {
         proc_10x = Process10X(
             tx_t2g,
             tx_index, 
-            tx_tech,
-            tx_intron_t2g,
-            tx_cdna_t2g, 
+            tx_tech, 
             reads_10x
         )
         proc_pcr = ProcessPCR(
@@ -76,29 +68,6 @@ workflow ProcessGroups {
 
 }
 
-workflow Process10X {
-    take:
-        tx_t2g
-        tx_index
-        tx_tech
-        tx_intron_t2g
-        tx_cdna_t2g
-        reads_10x
-    main:
-        h5ad_10x = KBCount(
-            reads_10x,
-            tx_intron_t2g,
-            tx_cdna_t2g,
-            tx_t2g,
-            tx_index,
-            tx_tech,
-        )
-        h5ad_ch = h5ad_10x.h5ad_ch
-    emit:
-        h5ad_ch
-
-}
-/*
 workflow Process10X {
     take:
         tx_t2g
@@ -139,7 +108,7 @@ workflow Process10X {
     emit:
         h5ad_ch
 }
-*/
+
 workflow ProcessPCR {
     take:
         pcr_t2g
