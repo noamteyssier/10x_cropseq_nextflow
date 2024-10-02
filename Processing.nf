@@ -4,6 +4,7 @@ include { KallistoBUS } from "./processes/kallisto_bus.nf"
 include { BUStoolsSort } from "./processes/bustools_sort.nf"
 include { BUStoolsInspect } from "./processes/bustools_inspect.nf"
 include { BUStoolsCount } from "./processes/bustools_count.nf"
+include { BUStoolsCorrect } from "./processes/bustools_correct.nf"
 include { BuildH5AD } from "./processes/build_h5ad.nf"
 include { GeomuxAssign } from "./processes/geomux_assign.nf"
 include { MergeAssignments } from "./processes/merge_assignments.nf"
@@ -21,6 +22,9 @@ workflow {
     pcr_index = file(params.kallisto.pcr.index, checkIfExists: true)
     reads_pcr = Channel
         .fromFilePairs (params.data.reads_pcr, checkIfExists: true)
+
+    // prepare whitelist
+    whitelist = file(params.whitelist, checkIfExists: true)
     
     // Launch Processes
     ProcessGroups (
@@ -32,6 +36,7 @@ workflow {
         pcr_index,
         params.kallisto.pcr.tech,
         reads_pcr,
+        whitelist,
     )
 }
 
@@ -45,24 +50,27 @@ workflow ProcessGroups {
         pcr_index
         pcr_tech
         reads_pcr
+        whitelist
     main:
         proc_10x = Process10X(
             tx_t2g,
             tx_index, 
             tx_tech, 
-            reads_10x
+            reads_10x,
+            whitelist,
         )
         proc_pcr = ProcessPCR(
             pcr_t2g,
             pcr_index,
             pcr_tech,
-            reads_pcr
+            reads_pcr,
+            whitelist,
         )
 
         h5ad_ch = proc_10x.h5ad_ch
-            .map { it -> [ it[0].replace("_10x", ""), it[1] ] }
+            .map { it -> [ it[0].replace("_10X", ""), it[1] ] }
         assignment_ch = proc_pcr.assignments_ch
-            .map { it -> [ it[0].replace("_CROP", ""), it[1] ] }
+            .map { it -> [ it[0].replace("_PCR", ""), it[1] ] }
         merged_ch = h5ad_ch.join(assignment_ch)
         IntersectAssignments(merged_ch)
 
@@ -74,6 +82,7 @@ workflow Process10X {
         tx_index
         tx_tech
         reads_10x
+        whitelist
     main:
         bus_10x = KallistoBUS (
             reads_10x,
@@ -81,8 +90,13 @@ workflow Process10X {
             tx_tech,
             "10x",
         )
-        sort_10x = BUStoolsSort(
+        correct_10x = BUStoolsCorrect(
             bus_10x.bus_ch,
+            whitelist,
+            "10x",
+        )
+        sort_10x = BUStoolsSort(
+            correct_10x.correct_bus_ch,
             "10x",
         )
         BUStoolsInspect(
@@ -115,6 +129,7 @@ workflow ProcessPCR {
         pcr_index
         pcr_tech
         reads_pcr
+        whitelist
     main:
         bus_pcr = KallistoBUS (
             reads_pcr,
@@ -122,8 +137,13 @@ workflow ProcessPCR {
             pcr_tech,
             "pcr",
         )
-        sort_pcr = BUStoolsSort(
+        correct_pcr = BUStoolsCorrect(
             bus_pcr.bus_ch,
+            whitelist,
+            "pcr",
+        )
+        sort_pcr = BUStoolsSort(
+            correct_pcr.correct_bus_ch,
             "pcr",
         )
         BUStoolsInspect(
